@@ -64,7 +64,7 @@ public class GameViewController {
         createDirt();
         createWalls();
         model.setHeroPosition(new Point2D(GAME_AREA_COLUMNS / 2, GAME_AREA_ROWS / 2));
-        model.setTile(model.getHeroPosition(), TileType.HERO_LEFT);
+        model.setTile(model.getHeroPosition(), model.getHeroTile());
         createObjects(TileType.DIAMOND, DIAMONDS);
         createObjects(TileType.ROCK, ROCKS);
         animationTimer.start();
@@ -79,12 +79,8 @@ public class GameViewController {
             return false;
         }
         model.setTile(currentPos, TileType.TUNNEL);
-        if (direction == Direction.LEFT || direction == Direction.RIGHT) {
-            model.setHeroFacingDirection(direction);
-        }
-        TileType heroTileType = model.getHeroFacingDirection() == Direction.LEFT ? 
-                TileType.HERO_LEFT : TileType.HERO_RIGHT;
-        model.setTile(destination, heroTileType);
+        
+        model.setTile(destination, model.getHeroTile());
         model.setHeroPosition(destination);
         
         if (destinationTile == TileType.DIAMOND) MainController.getInstance().addToScore(100);
@@ -109,6 +105,7 @@ public class GameViewController {
     private boolean handleMovementKeysPressed() {
         reverseKeyOrder = !reverseKeyOrder;
         Map<KeyCode, Boolean> pressedKeys = MainController.getInstance().getPressedKeys();
+        
         KeyCode[] movementCodes = { KeyCode.LEFT, KeyCode.RIGHT, KeyCode.UP, KeyCode.DOWN };
         for (int i = 0; i < movementCodes.length; i++) {
             int index = i;
@@ -133,7 +130,8 @@ public class GameViewController {
                 MainController.getInstance().updateTime();
                 prevUpdateTime = now;
                 if (now - prevMovementTime > MOVEMENT_INTERVAL) {
-                    if (handleMovementKeysPressed()) prevMovementTime = now;                    
+                    if (handleMovementKeysPressed()) prevMovementTime = now; 
+                    
                 }
             }
         };

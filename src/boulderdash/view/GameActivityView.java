@@ -27,8 +27,10 @@ public class GameActivityView {
     
     private Image brownBrickHorizontal;
     private Image rockfordLeft;
-    private Image brownBrickVertical;
     private Image rockfordRight;
+    private Image rockfordForward;
+    private Image rockfordBlink;
+    private Image brownBrickVertical;
     private Image diamond;
     private Image rock;
     private Image dirt;
@@ -46,6 +48,8 @@ public class GameActivityView {
         brownBrickHorizontal = new Image("file:brown_brick_horizontal.jpg");
         rockfordLeft = new Image("file:rockford_left.jpg");
         rockfordRight = new Image("file:rockford_right.jpg");
+        rockfordForward = new Image("file:rockford_forward.jpg");
+        rockfordBlink = new Image("file:rockford_blink.jpg");
         brownBrickVertical = new Image("file:brown_brick_vertical.jpg");
         diamond = new Image("file:diamond.jpg");
         rock = new Image("file:rock.jpg");
@@ -77,6 +81,12 @@ public class GameActivityView {
                 break;
             case HERO_RIGHT:
                 img = rockfordRight;
+                break;
+            case HERO_FORWARD:
+                img = rockfordForward;
+                break;
+            case HERO_BLINK:
+                img = rockfordBlink;
                 break;
             case WALL_HORIZONTAL:
                 img = brownBrickHorizontal;

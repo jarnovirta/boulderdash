@@ -9,8 +9,12 @@ import boulderdash.model.MainModel;
 import boulderdash.view.MainView;
 import java.util.HashMap;
 import java.util.Map;
+import javafx.beans.property.MapProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleMapProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableMap;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.stage.Stage;
@@ -27,14 +31,14 @@ public class MainController {
     private MainView view;
     private MainModel model;
     private Stage mainStage;
-    private Map<KeyCode, Boolean> pressedKeys;
+    private ObservableMap<KeyCode, Boolean> pressedKeys;
     
     private MainController(MainView view, Stage mainStage, MainModel model) {
         this.view = view;
         this.model = model;
         this.mainStage = mainStage;
         Scene mainScene = new Scene(view.getView());
-        pressedKeys = new HashMap<>();
+        pressedKeys = FXCollections.observableMap(new HashMap<KeyCode, Boolean>());
         
         mainScene.setOnKeyPressed(e -> pressedKeys.put(e.getCode(), true));
         mainScene.setOnKeyReleased(e -> pressedKeys.put(e.getCode(), false));
@@ -61,10 +65,12 @@ public class MainController {
         mainStage.show();
     }
 
+    public ObservableMap<KeyCode, Boolean> pressedKeysProperty() {
+        return pressedKeys;
+    }
     public Map<KeyCode, Boolean> getPressedKeys() {
         return pressedKeys;
     }
-    
     public void updateTime() {
         model.updateTime();
     }
