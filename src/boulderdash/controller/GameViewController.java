@@ -161,14 +161,34 @@ public class GameViewController {
             if (model.getTile(x, y) == TileType.DIRT) return new Point2D(x, y);
         }
     }
+    private Point2D getWallStartPoint(TileType wallType) {
+        Random rand = new Random();
+        int x = rand.nextInt(GAME_AREA_COLUMNS);
+        int y = rand.nextInt(GAME_AREA_ROWS);
+
+        if (wallType == TileType.WALL_HORIZONTAL) {
+            if (y == 0) y++;
+            if (y == GAME_AREA_ROWS - 1) y--;
+        }
+        else {
+            if (x == 0) x++;
+            if (x == GAME_AREA_COLUMNS - 1) x--;
+        }
+        if (y == 0) System.out.println("y = " + y);
+        if (y == GAME_AREA_ROWS) System.out.println("y = " + y);
+        if (x == 0) System.out.println("x = " + x);
+        if (x == GAME_AREA_COLUMNS) System.out.println("x = " + x);
+        return new Point2D(x, y);
+    }
     private void createWalls() {
         int wallTileCount = 0;
-
         Random rand = new Random();
         while (wallTileCount < WALL_TILES) {
-            int startX = rand.nextInt(GAME_AREA_COLUMNS);
-            int startY = rand.nextInt(GAME_AREA_ROWS);
             TileType tileType = rand.nextInt(2) == 0 ? TileType.WALL_HORIZONTAL : TileType.WALL_VERTICAL;
+            Point2D startPoint = getWallStartPoint(tileType);
+            int startX = (int) startPoint.getX();
+            int startY = (int) startPoint.getY();
+            
             int maxLength = tileType == TileType.WALL_HORIZONTAL ? 
                     GAME_AREA_COLUMNS - startX - 1 : GAME_AREA_ROWS - startY - 1;
             if (maxLength <= 0) {
