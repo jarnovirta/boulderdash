@@ -21,7 +21,6 @@ public class MainView {
     
     public MainView() {
         view = new VBox();
-        view.setStyle("-fx-background-color: #5E5E5E;");
         view.setAlignment(Pos.CENTER);
         view.setPadding(new Insets(0, 0, 0, 0));
         scoreView = new ScoreView();

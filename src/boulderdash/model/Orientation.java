@@ -9,6 +9,6 @@ package boulderdash.model;
  *
  * @author Jarno
  */
-public enum Direction {
-    LEFT, RIGHT, UP, DOWN, NONE;
+public enum Orientation {
+    HORIZONTAL, VERTICAL;
 }

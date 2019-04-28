@@ -9,18 +9,17 @@ import boulderdash.controller.GameViewController;
 import boulderdash.controller.MainController;
 import boulderdash.controller.ScoreViewController;
 import boulderdash.model.GameActivityModel;
+import boulderdash.model.MainModel;
 import boulderdash.model.ScoreModel;
 import boulderdash.view.MainView;
-import boulderdash.view.ScoreView;
 import javafx.application.Application;
-import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 /**
  *
  * @author Jarno
  */
-public class BoulderDash extends Application {
+public class App extends Application {
 
     /**
      * @param args the command line arguments
@@ -32,7 +31,7 @@ public class BoulderDash extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         MainView mainView = new MainView();
-        MainController.init(mainView, primaryStage);
+        MainController.init(mainView, primaryStage, new MainModel(mainView));
         
         GameActivityModel gameActivityModel = new GameActivityModel(mainView.getGameActivityView());
         GameViewController.init(mainView.getGameActivityView(), gameActivityModel);

@@ -6,21 +6,57 @@
 package boulderdash.view;
 
 import javafx.geometry.Insets;
-import javafx.scene.layout.HBox;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.BorderPane;
+
+import javafx.scene.text.Font;
 
 /**
  *
  * @author Jarno
  */
 public class ScoreView {
-    private HBox view;
-
+    private BorderPane view;
+    private Label timeLeftLabel;
+    private Label scoreLabel;
+    private Label gameOverLabel;
+    private Button resetButton;
+    
     public ScoreView() {
-        view = new HBox();
-        view.setPadding(new Insets(0, 0, 0, 0));
+        view = new BorderPane();
+        view.setPadding(new Insets(5, 30, 5, 30));
+                
+        timeLeftLabel = getLabel();                
+        scoreLabel = getLabel();        
+        gameOverLabel = getLabel();
+        
+        resetButton = new Button("Reset");
+        resetButton.setFont(Font.font(15));
+        view.setLeft(timeLeftLabel);
+        view.setCenter(scoreLabel);
+        view.setRight(resetButton);        
     }    
 
-    public HBox getView() {
+    private Label getLabel() {
+        Label label = new Label();    
+        label.setFont(Font.font(25));
+        return label;
+    }
+    public BorderPane getView() {
         return view;
     }    
+
+    public Label getTimeLeftLabel() {
+        return timeLeftLabel;
+    }
+
+    public Label getScoreLabel() {
+        return scoreLabel;
+    }
+    
+    public Button getResetButton() {
+        return resetButton;
+    }
+    
 }

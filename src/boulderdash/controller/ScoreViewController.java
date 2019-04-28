@@ -20,13 +20,15 @@ public class ScoreViewController {
     private ScoreViewController(ScoreView view, ScoreModel model) {
         this.view = view;
         this.model = model;
+        view.getResetButton().setOnAction(e -> MainController.getInstance().start());
     }
     public static void init(ScoreView view, ScoreModel model) {
-        if (controller != null) throw new IllegalStateException();
+        if (controller != null) throw new IllegalStateException("Already initiated");
         controller = new ScoreViewController(view, model);
     }
     public static ScoreViewController getInstance() {
-        if (controller == null) throw new IllegalStateException();
+        if (controller == null) throw new IllegalStateException("Not initiated");
         return controller;
     }
+    
 }
