@@ -39,7 +39,7 @@ public class GameActivityView {
         view.setPadding(new Insets(0, 0, 0, 0));
         view.setAlignment(Pos.CENTER);
         loadImages();        
-        drawOutterWalls();
+        drawOuterWalls();
     }
     
     private void loadImages() {
@@ -52,7 +52,7 @@ public class GameActivityView {
         dirt = new Image("file:dirt.jpg");
     }
 
-    private void drawOutterWalls() {
+    private void drawOuterWalls() {
         for (int col = 0; col < COLUMNS; col++) {
             view.add(new ImageView(brownBrickHorizontal), col, 0);
             view.add(new ImageView(brownBrickHorizontal), col, ROWS - 1);
