@@ -20,13 +20,14 @@ import javafx.stage.Stage;
  * @author Jarno
  */
 public class MainController {
+    
+    private final int LEVEL_TIME = 60; // seconds
+    
     private static MainController controller;
     private MainView view;
     private MainModel model;
     private Stage mainStage;
     private Map<KeyCode, Boolean> pressedKeys;
-    
-    private final int LEVEL_TIME = 10; // seconds
     
     private MainController(MainView view, Stage mainStage, MainModel model) {
         this.view = view;

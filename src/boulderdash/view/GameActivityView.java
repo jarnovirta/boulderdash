@@ -26,32 +26,30 @@ public class GameActivityView {
     public static final int COLUMNS = 25;
     
     private Image brownBrickHorizontal;
-    private Image grayBrickHorizontal;
     private Image rockfordLeft;
     private Image brownBrickVertical;
-    private Image grayBrickVertical;
     private Image rockfordRight;
     private Image diamond;
+    private Image rock;
     private Image dirt;
-    
-    // GRAY BACKGROUND HEX: 5E5E5E
-    
+        
     public GameActivityView() {
 
         view = new GridPane();
         view.setPadding(new Insets(0, 0, 0, 0));
         view.setAlignment(Pos.CENTER);
-        
+        loadImages();        
+        drawOutterWalls();
+    }
+    
+    private void loadImages() {
         brownBrickHorizontal = new Image("file:brown_brick_horizontal.jpg");
-        grayBrickHorizontal = new Image("file:gray_brick_horizontal.jpg");
         rockfordLeft = new Image("file:rockford_left.jpg");
         rockfordRight = new Image("file:rockford_right.jpg");
         brownBrickVertical = new Image("file:brown_brick_vertical.jpg");
-        grayBrickVertical = new Image("file:gray_brick_vertical.jpg");
         diamond = new Image("file:diamond.jpg");
+        rock = new Image("file:rock.jpg");
         dirt = new Image("file:dirt.jpg");
-        
-        drawOutterWalls();
     }
 
     private void drawOutterWalls() {
@@ -89,6 +87,9 @@ public class GameActivityView {
             case DIAMOND:
                 img = diamond;
                 break;
+            case ROCK:
+                img = rock;
+                break;
             case TUNNEL:
                 setTileToTunnel(x, y);
                 return;            
@@ -99,7 +100,7 @@ public class GameActivityView {
     }
     public void setTileToTunnel(int x, int y) {
         Rectangle rect = new Rectangle(40, 40);
-        rect.setFill(Color.web("5E5E5E"));
+        rect.setFill(Color.BLACK);
         GridPane.setRowIndex(rect, y);
         GridPane.setColumnIndex(rect, x);        
         view.getChildren().addAll(rect);

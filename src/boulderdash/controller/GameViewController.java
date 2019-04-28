@@ -48,8 +48,7 @@ public class GameViewController {
                 .addListener((obs, oldValue, newValue) -> {
                     if (newValue.booleanValue() == true) animationTimer.stop();
                 });
-    }
-    
+    }   
 
     public static void init(GameActivityView view, GameActivityModel model) {
         if (controller != null) throw new IllegalStateException("Already initiated");
@@ -66,7 +65,8 @@ public class GameViewController {
         createWalls();
         model.setHeroPosition(new Point2D(GAME_AREA_COLUMNS / 2, GAME_AREA_ROWS / 2));
         model.setTile(model.getHeroPosition(), TileType.HERO_LEFT);
-        createDiamonds();
+        createObjects(TileType.DIAMOND, DIAMONDS);
+        createObjects(TileType.ROCK, ROCKS);
         animationTimer.start();
     }
     private boolean moveHero(Direction direction) {
@@ -74,7 +74,8 @@ public class GameViewController {
         Point2D destination = currentPos.add(getMovementPoint(direction));
         TileType destinationTile = model.getTile(destination);
         if (destinationTile == null || destinationTile == TileType.WALL_HORIZONTAL
-                || destinationTile == TileType.WALL_VERTICAL) {
+                || destinationTile == TileType.WALL_VERTICAL
+                || destinationTile == TileType.ROCK) {
             return false;
         }
         model.setTile(currentPos, TileType.TUNNEL);
@@ -145,12 +146,13 @@ public class GameViewController {
             }
         }
     }
-    private void createDiamonds() {
-        int diamondsCount = 0;
-        while (diamondsCount++ < DIAMONDS) {
-            model.setTile(getEmptyTile(), TileType.DIAMOND);            
+    private void createObjects(TileType type, int targetCount) {
+        int count = 0;
+        while (count++ < targetCount) {
+            model.setTile(getEmptyTile(), type);            
         }
     }
+    
     private Point2D getEmptyTile() {
         Random rand = new Random();
         while (true) {
