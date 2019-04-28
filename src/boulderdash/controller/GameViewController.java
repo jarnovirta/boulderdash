@@ -174,10 +174,7 @@ public class GameViewController {
             if (x == 0) x++;
             if (x == GAME_AREA_COLUMNS - 1) x--;
         }
-        if (y == 0) System.out.println("y = " + y);
-        if (y == GAME_AREA_ROWS) System.out.println("y = " + y);
-        if (x == 0) System.out.println("x = " + x);
-        if (x == GAME_AREA_COLUMNS) System.out.println("x = " + x);
+
         return new Point2D(x, y);
     }
     private void createWalls() {
