@@ -92,5 +92,8 @@ public class Hero {
 
     public void setPosition(Point2D position) {
         this.positionProperty.setValue(position);
-    }    
+    }
+    public void stopAnimation() {
+        animationTimer.stop();
+    }
 }

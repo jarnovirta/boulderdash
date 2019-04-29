@@ -11,5 +11,5 @@ package boulderdash.model;
  */
 public enum TileType {
     HERO, DIRT, DIAMOND, BRICK_WALL_HORIZONTAL, 
-    BRICK_WALL_VERTICAL, TUNNEL, ROCK;
+    BRICK_WALL_VERTICAL, TUNNEL, ROCK, NONE;
 }

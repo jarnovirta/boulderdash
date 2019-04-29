@@ -18,7 +18,7 @@ public class MainModel {
     private SimpleBooleanProperty gameEnded;
     private long startTime; // milliseconds
     private int levelTime;
-    private SimpleIntegerProperty timeLeft; 
+    private SimpleIntegerProperty timeLeft;
     private SimpleIntegerProperty score;
     
     public MainModel(MainView view) {

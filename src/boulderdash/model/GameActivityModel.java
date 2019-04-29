@@ -8,7 +8,12 @@ import boulderdash.controller.MainController;
 import boulderdash.domain.Hero;
 import boulderdash.service.ImageService;
 import boulderdash.view.GameActivityView;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
 import javafx.beans.property.SimpleObjectProperty;
@@ -31,14 +36,23 @@ public class GameActivityModel {
     private GameActivityView view;
         
     private SimpleObjectProperty<TileType>[][] tiles;
+    private Set<Point2D> fallingObjectPositions;
+    
+    // lastAnimationFallingRocks is used to keep track of rocks which
+    // moved on last animation round. Such a rock can crush hero. A 
+    // stationary rock above hero will not.
+    
+    private Set<Point2D> lastAnimationFallingRocks;
     private Hero hero;
         
     public GameActivityModel(GameActivityView view) {
         this.view = view;
         tiles = new SimpleObjectProperty[GameActivityView.COLUMNS][GameActivityView.ROWS];
+        fallingObjectPositions = new HashSet<>();
+        lastAnimationFallingRocks = new HashSet<>();
         initTilesArray();        
         hero = new Hero();        
-        bindViewToHeroProperties();
+        bindHeroProperties();
         bindHeroToKeyPresses();                
     }
     
@@ -71,7 +85,11 @@ public class GameActivityModel {
                     }                    
         });        
     }
-    private void bindViewToHeroProperties() {
+    private void bindHeroProperties() {
+        MainController.getInstance().gameEndedProperty()
+                .addListener((obs, oldValue, newValue) -> {
+                    if (newValue == true) hero.stopAnimation();
+                });
         hero.positionProperty().addListener((obs, oldValue, newValue) -> {
             if (oldValue != null) setTile(oldValue, TileType.TUNNEL);
             setTile(newValue, TileType.HERO);
@@ -114,6 +132,27 @@ public class GameActivityModel {
         hero.setFacing(direction);
     }
 
+    public Set<Point2D> getFallingObjectPositions() {
+        return fallingObjectPositions;
+    }
+
+    public TileType[][] getTileTypesAroundPoint(int pointX, int pointY) {
+        TileType[][] tiles = new TileType[2][3];
+        Arrays.fill(tiles[0], TileType.NONE);
+        Arrays.fill(tiles[1], TileType.NONE);
+        
+        for (int y = 0; y <= 1; y++) {
+            int row = pointY + y;
+            if (row > GAME_AREA_END_ROW) continue;
+            for (int x = 0; x <= 2; x++) {
+                int col = pointX - 1 + x;
+                if (col < GAME_AREA_START_COLUMN || col > GAME_AREA_END_COLUMN) continue;
+                tiles[y][x] = getTile(col, row);            
+            }
+        }
+        return tiles;
+    }
+ 
     public Image getTileImage(TileType type) {
         switch (type) {
             case DIRT:
@@ -127,9 +166,17 @@ public class GameActivityModel {
             case ROCK:
                 return ImageService.ROCK;
             case TUNNEL:
-                return ImageService.TUNNEL;
-            
+                return ImageService.TUNNEL;            
         }
         return null;
-    } 
+    }
+
+    public Set<Point2D> getLastAnimationFallingRocks() {
+        return lastAnimationFallingRocks;
+    }
+
+    public void setLastAnimationFallingRocks(Set<Point2D> lastAnimationFallingRocks) {
+        this.lastAnimationFallingRocks = lastAnimationFallingRocks;
+    }
+    
 }

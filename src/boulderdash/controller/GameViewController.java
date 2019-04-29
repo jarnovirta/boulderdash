@@ -8,15 +8,19 @@ package boulderdash.controller;
 import boulderdash.model.Direction;
 import boulderdash.model.GameActivityModel;
 import boulderdash.model.TileType;
-import boulderdash.service.ImageService;
 import boulderdash.view.GameActivityView;
 
 import static boulderdash.model.GameActivityModel.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Point2D;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 
 
@@ -78,6 +82,7 @@ public class GameViewController {
     }
     private boolean moveHero(Direction direction) {
         Point2D currentPos = model.getHeroPosition();
+        
         Point2D destination = currentPos.add(getMovementPoint(direction));
         TileType destinationTile = model.getTile(destination);
         if (destinationTile == null || destinationTile == TileType.BRICK_WALL_HORIZONTAL
@@ -89,7 +94,103 @@ public class GameViewController {
         model.setHeroPosition(destination);
                 
         if (destinationTile == TileType.DIAMOND) MainController.getInstance().addToScore(100);
+        checkForNewFallingObjects((int) currentPos.getX(), (int) currentPos.getY());
+
         return true;
+    }
+    private void checkForNewFallingObjects(int x, int y) {
+        Set<Point2D> fallingObjects = model.getFallingObjectPositions();
+        for (int row = y - 1; row <= y + 1; row++) {
+            if (row > GAME_AREA_END_ROW) continue;
+            for (int col = x - 1; col <= x + 1 ; col++) {
+                if (col > GAME_AREA_END_COLUMN) continue;                
+                Point2D point = new Point2D(col, row);                
+                if (getPossibleObjectFallPoints(col, row).size() > 0
+                        && !fallingObjects.contains(point)) {
+                    fallingObjects.add(point);
+                }
+            }
+        }
+    }
+
+    private Set<Point2D> getPossibleObjectFallPoints(int objectX, int objectY) {
+        Set<Point2D> fallPointsList = new HashSet<>();
+        TileType tile = model.getTile(objectX, objectY);
+        
+        if (objectY == GAME_AREA_END_ROW) return fallPointsList;
+        if (tile != TileType.DIAMOND && tile != TileType.ROCK) return fallPointsList;        
+        
+        TileType[][] tiles = model.getTileTypesAroundPoint(objectX, objectY);        
+        
+        TileType tileUnder = tiles[1][1];
+        Point2D pointUnder = new Point2D(objectX, objectY + 1);
+        if (tileUnder == TileType.TUNNEL) {            
+            fallPointsList.add(pointUnder);
+        }
+        else if (tileUnder == TileType.HERO 
+                && model.getLastAnimationFallingRocks().contains(new Point2D(objectX, objectY))) {
+            fallPointsList.add(pointUnder);
+        }
+        // Handle falling off to the side off a rock, edge of wall, or a diamond
+        else if (tileUnder != TileType.HERO && tileUnder != TileType.DIRT) {
+            if (tiles[0][0] == TileType.TUNNEL && tiles[1][0] == TileType.TUNNEL) {
+                fallPointsList.add(new Point2D(objectX - 1, objectY));
+            }
+            if (tiles[0][2] == TileType.TUNNEL && tiles[1][2] == TileType.TUNNEL) {
+                fallPointsList.add(new Point2D(objectX + 1, objectY));
+            }
+        }        
+        return fallPointsList;
+    }
+    
+    private void moveFallingObjects() {
+        List<Point2D> movedFromPositions = new ArrayList<>();
+        Set<Point2D> fallingObjects = model.getFallingObjectPositions();
+        
+        Set<Point2D> lastAnimationFallingRocks = model.getLastAnimationFallingRocks();
+        Set<Point2D> fallenRocksNewPositions = new HashSet<>();
+        
+        Iterator<Point2D> iter = fallingObjects.iterator();
+        
+        // Iterate over objects which can fall, then remove them from 
+        // the falling objects Set. After moving objects all 
+        // squares around the moved object are checked for objects which
+        // can now fall
+        while (iter.hasNext()) {
+            Point2D fallingObjectPosition = iter.next();
+            Set<Point2D> fallingPoints = getPossibleObjectFallPoints(
+                    (int) fallingObjectPosition.getX(), 
+                    (int) fallingObjectPosition.getY());
+            if (fallingPoints.size() == 0) continue;
+            List<Point2D> pointsList = new ArrayList<>(fallingPoints);
+            Collections.shuffle(pointsList);
+            Point2D destination = pointsList.get(0);
+            
+            TileType fallingObject = model.getTile(fallingObjectPosition);
+            TileType tileAtDestination = 
+                    model.getTile(destination);
+            
+            if (fallingObject == TileType.ROCK){
+                fallenRocksNewPositions.add(destination);
+                if (tileAtDestination == TileType.HERO 
+                        && lastAnimationFallingRocks.contains(fallingObjectPosition)) {
+                    MainController.getInstance().setGameEnded(true);
+                }
+            }
+            
+            model.setTile(destination, fallingObject);
+            model.setTile(fallingObjectPosition, TileType.TUNNEL);
+            
+            movedFromPositions.add(fallingObjectPosition);
+            iter.remove();
+                       
+        }
+        model.setLastAnimationFallingRocks(fallenRocksNewPositions);
+        
+        // Check for new falling objects
+        for (Point2D oldPosition : movedFromPositions) {
+            checkForNewFallingObjects((int) oldPosition.getX(), (int) oldPosition.getY());
+        }
     }
     private Point2D getMovementPoint(Direction direction) {
         int x = direction == Direction.LEFT ? - 1 : 
@@ -119,15 +220,14 @@ public class GameViewController {
             if (pressedKeys.getOrDefault(code, false)) {
                 if (moveHero(Direction.valueOf(code.toString()))) return true;                
             }
-        }
-        
+        }        
         return false;
     } 
     private  AnimationTimer getAnimationTimer() {
         return new AnimationTimer() {
             long prevUpdateTime = System.nanoTime();
             long prevMovementTime = 0;
-
+            long fallingObjectsMovedTime = 0;
             @Override
             public void handle(long now) {
                 if (now - prevUpdateTime < UPDATE_INTERVAL) {
@@ -137,6 +237,10 @@ public class GameViewController {
                 prevUpdateTime = now;
                 if (now - prevMovementTime > MOVEMENT_INTERVAL) {
                     if (handleHeroMovementCommands()) prevMovementTime = now;
+                }
+                if (now - fallingObjectsMovedTime > MOVEMENT_INTERVAL) {
+                    fallingObjectsMovedTime = now;
+                    moveFallingObjects();
                 }
             }
         };
