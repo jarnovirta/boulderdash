@@ -7,14 +7,16 @@ package boulderdash.controller;
 
 import boulderdash.model.Direction;
 import boulderdash.model.GameActivityModel;
-import static boulderdash.model.GameActivityModel.GAME_AREA_COLUMNS;
-import static boulderdash.model.GameActivityModel.GAME_AREA_ROWS;
 import boulderdash.model.TileType;
+import boulderdash.service.ImageService;
 import boulderdash.view.GameActivityView;
+
+import static boulderdash.model.GameActivityModel.*;
 import java.util.Map;
 import java.util.Random;
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Point2D;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 
 
@@ -43,7 +45,7 @@ public class GameViewController {
         this.view = view;
         this.model = model;
         this.animationTimer = getAnimationTimer();
- 
+        
         MainController.getInstance().gameEndedProperty()
                 .addListener((obs, oldValue, newValue) -> {
                     if (newValue.booleanValue() == true) animationTimer.stop();
@@ -61,28 +63,31 @@ public class GameViewController {
     
     public void start() {
         animationTimer.stop();
+        createOuterWalls();
         createDirt();
+                
         createWalls();
-        model.setHeroPosition(new Point2D(GAME_AREA_COLUMNS / 2, GAME_AREA_ROWS / 2));
-        model.setTile(model.getHeroPosition(), model.getHeroTile());
         createObjects(TileType.DIAMOND, DIAMONDS);
         createObjects(TileType.ROCK, ROCKS);
+        
+        int heroX = (GAME_AREA_START_COLUMN + GAME_AREA_END_COLUMN) / 2;
+        int heroY = (GAME_AREA_START_ROW + GAME_AREA_END_ROW) / 2;
+        model.setHeroPosition(new Point2D(heroX, heroY));
+        
         animationTimer.start();
     }
     private boolean moveHero(Direction direction) {
         Point2D currentPos = model.getHeroPosition();
         Point2D destination = currentPos.add(getMovementPoint(direction));
         TileType destinationTile = model.getTile(destination);
-        if (destinationTile == null || destinationTile == TileType.WALL_HORIZONTAL
-                || destinationTile == TileType.WALL_VERTICAL
+        if (destinationTile == null || destinationTile == TileType.BRICK_WALL_HORIZONTAL
+                || destinationTile == TileType.BRICK_WALL_VERTICAL
                 || destinationTile == TileType.ROCK) {
             return false;
         }
         model.setTile(currentPos, TileType.TUNNEL);
-        
-        model.setTile(destination, model.getHeroTile());
         model.setHeroPosition(destination);
-        
+                
         if (destinationTile == TileType.DIAMOND) MainController.getInstance().addToScore(100);
         return true;
     }
@@ -102,7 +107,7 @@ public class GameViewController {
     // when two keys are pressed at once.
     private static boolean reverseKeyOrder = false;
     
-    private boolean handleMovementKeysPressed() {
+    private boolean handleHeroMovementCommands() {
         reverseKeyOrder = !reverseKeyOrder;
         Map<KeyCode, Boolean> pressedKeys = MainController.getInstance().getPressedKeys();
         
@@ -115,8 +120,9 @@ public class GameViewController {
                 if (moveHero(Direction.valueOf(code.toString()))) return true;                
             }
         }
+        
         return false;
-    }
+    } 
     private  AnimationTimer getAnimationTimer() {
         return new AnimationTimer() {
             long prevUpdateTime = System.nanoTime();
@@ -130,20 +136,29 @@ public class GameViewController {
                 MainController.getInstance().updateTime();
                 prevUpdateTime = now;
                 if (now - prevMovementTime > MOVEMENT_INTERVAL) {
-                    if (handleMovementKeysPressed()) prevMovementTime = now; 
-                    
+                    if (handleHeroMovementCommands()) prevMovementTime = now;
                 }
             }
         };
     }
-
+    private void createOuterWalls() {
+        for (int col = 0; col < GameActivityView.COLUMNS; col++) {
+            model.setTile(col, 0, TileType.BRICK_WALL_HORIZONTAL);
+            model.setTile(col, GameActivityView.ROWS - 1, TileType.BRICK_WALL_HORIZONTAL);            
+        }
+        for (int row = 0; row < GameActivityView.ROWS; row++) {
+            model.setTile(0, row, TileType.BRICK_WALL_VERTICAL);
+            model.setTile(GameActivityView.COLUMNS - 1, row, TileType.BRICK_WALL_VERTICAL);                       
+        }        
+    } 
     private void createDirt() {
-        for (int row = 0; row < GAME_AREA_ROWS; row++) {
-            for (int col = 0; col < GAME_AREA_COLUMNS; col++) {
+        for (int row = GameActivityModel.GAME_AREA_START_ROW; row <= GameActivityModel.GAME_AREA_END_ROW; row++) {
+            for (int col = GameActivityModel.GAME_AREA_START_COLUMN; col <= GameActivityModel.GAME_AREA_END_COLUMN; col++) {
                 model.setTile(col, row, TileType.DIRT);
             }
         }
     }
+    
     private void createObjects(TileType type, int targetCount) {
         int count = 0;
         while (count++ < targetCount) {
@@ -154,47 +169,51 @@ public class GameViewController {
     private Point2D getEmptyTile() {
         Random rand = new Random();
         while (true) {
-            int x = rand.nextInt(GAME_AREA_COLUMNS);
-            int y = rand.nextInt(GAME_AREA_ROWS);
+            int x = GAME_AREA_START_COLUMN + rand.nextInt(GAME_AREA_END_COLUMN + 1);
+            int y = GAME_AREA_START_ROW + rand.nextInt(GAME_AREA_END_ROW + 1);
             if (model.getTile(x, y) == TileType.DIRT) return new Point2D(x, y);
         }
     }
+    
     private Point2D getWallStartPoint(TileType wallType) {
         Random rand = new Random();
-        int x = rand.nextInt(GAME_AREA_COLUMNS);
-        int y = rand.nextInt(GAME_AREA_ROWS);
+        int x = GAME_AREA_START_COLUMN + 1 + rand.nextInt(GAME_AREA_END_COLUMN - 2);
+        int y = GAME_AREA_START_ROW + 1 + rand.nextInt(GAME_AREA_END_ROW - 2);
 
-        if (wallType == TileType.WALL_HORIZONTAL) {
-            if (y == 0) y++;
-            if (y == GAME_AREA_ROWS - 1) y--;
+        if (wallType == TileType.BRICK_WALL_HORIZONTAL) {
+            if (y == GAME_AREA_START_ROW) y++;
+            if (y == GAME_AREA_END_ROW) y--;
         }
         else {
-            if (x == 0) x++;
-            if (x == GAME_AREA_COLUMNS - 1) x--;
+            if (x == GAME_AREA_START_COLUMN) x++;
+            if (x == GAME_AREA_END_COLUMN - 1) x--;
         }
-
         return new Point2D(x, y);
-    }
+    } 
     private void createWalls() {
         int wallTileCount = 0;
         Random rand = new Random();
         while (wallTileCount < WALL_TILES) {
-            TileType tileType = rand.nextInt(2) == 0 ? TileType.WALL_HORIZONTAL : TileType.WALL_VERTICAL;
+            TileType tileType = rand.nextInt(2) == 0 ? TileType.BRICK_WALL_HORIZONTAL : 
+                    TileType.BRICK_WALL_VERTICAL;
             Point2D startPoint = getWallStartPoint(tileType);
+            
             int startX = (int) startPoint.getX();
             int startY = (int) startPoint.getY();
             
-            int maxLength = tileType == TileType.WALL_HORIZONTAL ? 
-                    GAME_AREA_COLUMNS - startX - 1 : GAME_AREA_ROWS - startY - 1;
+            int maxWidth = GAME_AREA_END_COLUMN - startX + 1;
+            int maxHeight = GAME_AREA_END_ROW - startY + 1;
+            
+            int maxLength = tileType == TileType.BRICK_WALL_HORIZONTAL ? 
+                    maxWidth : maxHeight;
             if (maxLength <= 0) {
                 continue;
             }
             int length = 1 + rand.nextInt(maxLength);
-
             for (int i = 0; i < length; i++) {
                 int x;
                 int y;
-                if (tileType == TileType.WALL_HORIZONTAL) {
+                if (tileType == TileType.BRICK_WALL_HORIZONTAL) {
                     x = startX + i;
                     y = startY;
                 } else {
@@ -205,5 +224,5 @@ public class GameViewController {
                 wallTileCount++;
             }
         }
-    }
+    } 
 }

@@ -11,6 +11,7 @@ import boulderdash.controller.ScoreViewController;
 import boulderdash.model.GameActivityModel;
 import boulderdash.model.MainModel;
 import boulderdash.model.ScoreModel;
+import boulderdash.service.ImageService;
 import boulderdash.view.MainView;
 import javafx.application.Application;
 import javafx.stage.Stage;
@@ -30,6 +31,7 @@ public class App extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+        
         MainView mainView = new MainView();
         MainController.init(mainView, primaryStage, new MainModel(mainView));
         

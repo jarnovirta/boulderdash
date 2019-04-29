@@ -5,14 +5,13 @@
  */
 package boulderdash.model;
 import boulderdash.controller.MainController;
+import boulderdash.domain.Hero;
+import boulderdash.service.ImageService;
 import boulderdash.view.GameActivityView;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
-import javafx.animation.AnimationTimer;
+import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.collections.MapChangeListener;
 import javafx.geometry.Point2D;
 import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
@@ -23,107 +22,114 @@ import javafx.scene.input.KeyCode;
  * @author Jarno
  */
 public class GameActivityModel {
-    private GameActivityView view;
-    public static final int GAME_AREA_ROWS = GameActivityView.ROWS - 2;
-    public static final int GAME_AREA_COLUMNS = GameActivityView.COLUMNS - 2;
     
+    public static final int GAME_AREA_START_ROW = 1;
+    public static final int GAME_AREA_END_ROW = GameActivityView.ROWS - 2;
+    public static final int GAME_AREA_START_COLUMN = 1;
+    public static final int GAME_AREA_END_COLUMN = GameActivityView.COLUMNS - 2;
+    
+    private GameActivityView view;
+        
     private SimpleObjectProperty<TileType>[][] tiles;
-    private TileType heroTile;
-    private Point2D heroPosition;
-    private AnimationTimer blinkTimer;
+    private Hero hero;
         
     public GameActivityModel(GameActivityView view) {
         this.view = view;
-        tiles = new SimpleObjectProperty[GAME_AREA_COLUMNS][GAME_AREA_ROWS];
-        blinkTimer = getBlinkTimer();
-        blinkTimer.start();
-        heroTile = TileType.HERO_FORWARD;
-        MainController.getInstance()
-                .pressedKeysProperty()
-                .addListener(new MapChangeListener<KeyCode, Boolean>() {
+        tiles = new SimpleObjectProperty[GameActivityView.COLUMNS][GameActivityView.ROWS];
+        initTilesArray();        
+        hero = new Hero();        
+        bindViewToHeroProperties();
+        bindHeroToKeyPresses();                
+    }
+    
+    public void initTilesArray() {
+        for (int row = 0; row < GameActivityView.ROWS; row++) {
+            for (int col = 0; col < GameActivityView.COLUMNS; col++) {
+                SimpleObjectProperty<TileType> tileType = new SimpleObjectProperty<>();
+                final int x = col;
+                final int y = row;
+                tileType.addListener((obs, oldValue, newValue) -> view.setCellValue(x, y, getTileImage(newValue)));
+                tiles[col][row] = tileType;
+            }
+        }
+    }
+    private void bindHeroToKeyPresses() {
+        MainController.getInstance().pressedKeysProperty()
+                .addListener(new InvalidationListener() {
                     @Override
-                    public void onChanged(MapChangeListener.Change<? extends KeyCode, ? extends Boolean> change) {
-                        setHeroTile((Map<KeyCode, Boolean>) change.getMap());
-                    }
-                });
-                
-        initiateTilesArray();
+                    public void invalidated(Observable observable) {
+                        if (MainController.getInstance().gameEndedProperty().getValue()) return;
+                        Map<KeyCode, Boolean> pressedKeys = MainController.getInstance().getPressedKeys();
+                        if (pressedKeys.getOrDefault(KeyCode.LEFT, Boolean.FALSE)) setHeroFacing(Direction.LEFT);
+                        else if (pressedKeys.getOrDefault(KeyCode.RIGHT, Boolean.FALSE)) setHeroFacing(Direction.RIGHT);
+                        else if (pressedKeys.getOrDefault(KeyCode.UP, Boolean.FALSE) ||
+                                pressedKeys.getOrDefault(KeyCode.DOWN, Boolean.FALSE)) {
+                            Direction dir = Math.random() < 0.5 ? Direction.LEFT : Direction.RIGHT;
+                            setHeroFacing(dir);
+                        }
+                        else setHeroFacing(Direction.FORWARD);
+                    }                    
+        });        
     }
-    private void setHeroTile(Map<KeyCode, Boolean> pressedKeys) {
-        blinkTimer.stop();
-        if (pressedKeys.getOrDefault(KeyCode.LEFT, Boolean.FALSE)) {
-            heroTile = TileType.HERO_LEFT;
-        }
-        else if (pressedKeys.getOrDefault(KeyCode.RIGHT, Boolean.FALSE)) {
-            heroTile = TileType.HERO_RIGHT;
-        }
-        else if (pressedKeys.getOrDefault(KeyCode.UP, Boolean.FALSE)
-                || pressedKeys.getOrDefault(KeyCode.DOWN, Boolean.FALSE)) {
-            heroTile = Math.random() < 0.5 ? TileType.HERO_LEFT : TileType.HERO_RIGHT;
-        }
-        else {
-            heroTile = TileType.HERO_FORWARD;
-            blinkTimer.start();
-        }
-        setTile(heroPosition, heroTile);
+    private void bindViewToHeroProperties() {
+        hero.positionProperty().addListener((obs, oldValue, newValue) -> {
+            if (oldValue != null) setTile(oldValue, TileType.TUNNEL);
+            setTile(newValue, TileType.HERO);
+            view.setCellValue((int) newValue.getX(), (int) newValue.getY(), 
+                    hero.getImage());
+        });
+        hero.imageProperty().addListener((obs, oldValue, newValue) 
+                -> view.setCellValue((int) hero.getPosition().getX(), 
+                        (int) hero.getPosition().getY(), 
+                        newValue));     
     }
+    
     public void setTile(int x, int y, TileType type) {
         tiles[x][y].setValue(type);
-    }
+    } 
     public void setTile(Point2D pos, TileType type) {
-        GameActivityModel.this.setTile((int) pos.getX(), (int) pos.getY(), type);
+        setTile((int) pos.getX(), (int) pos.getY(), type);
     }
     public TileType getTile(int x, int y) {
-        if (x < 0 || x > GAME_AREA_COLUMNS - 1 || y < 0 || y > GAME_AREA_ROWS - 1) {
+        if (x < 0 || x > GameActivityView.COLUMNS - 1 || y < 0 || y > GameActivityView.ROWS - 1) {
             return null;
         }
         return tiles[x][y].getValue();
-    }
+    } 
     public TileType getTile(Point2D position) {
         return getTile((int) position.getX(), (int) position.getY());
-    }
-    private AnimationTimer getBlinkTimer() {
-        return new AnimationTimer() {
-            long previous;
-            
-            @Override
-            public void handle(long now) {
-                long interval = 1_500_000_000;
-                if (heroTile == TileType.HERO_BLINK) interval = 200_000_000;
-                
-                if (now - previous < interval) return;
-                previous = now;
-                if (heroTile == TileType.HERO_FORWARD) heroTile = TileType.HERO_BLINK;
-                else heroTile = TileType.HERO_FORWARD;
-                setTile(heroPosition, heroTile);
-            }
-            public void start() {
-                previous =  System.nanoTime();
-                super.start();
-            }
-        };
-    }
-    public void initiateTilesArray() {
-        for (int row = 0; row < GAME_AREA_ROWS; row++) {
-            for (int col = 0; col < GAME_AREA_COLUMNS; col++) {
-                SimpleObjectProperty<TileType> tile = new SimpleObjectProperty<>();
-                final int x = col;
-                final int y = row;
-                tile.addListener((obs, oldValue, newValue) -> view.setTile(x, y, newValue));
-                tiles[col][row] = tile;
-            }
-        }
-    }
+    } 
 
     public Point2D getHeroPosition() {
-        return heroPosition;
+        return hero.getPosition();
     }
 
     public void setHeroPosition(Point2D heroPosition) {
-        this.heroPosition = heroPosition;
+        hero.setPosition(heroPosition);
+    }
+    public Direction getHeroFacing() {
+        return hero.getFacing();
+    }
+    public void setHeroFacing(Direction direction) {
+        hero.setFacing(direction);
     }
 
-    public TileType getHeroTile() {
-        return heroTile;
-    }    
+    public Image getTileImage(TileType type) {
+        switch (type) {
+            case DIRT:
+                return ImageService.DIRT;
+            case BRICK_WALL_HORIZONTAL:
+                return ImageService.BRICK_WALL_HORIZONTAL;
+            case BRICK_WALL_VERTICAL:
+                return ImageService.BRICK_WALL_VERTICAL;
+            case DIAMOND:
+                return ImageService.DIAMOND;
+            case ROCK:
+                return ImageService.ROCK;
+            case TUNNEL:
+                return ImageService.TUNNEL;
+            
+        }
+        return null;
+    } 
 }
